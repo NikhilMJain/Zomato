@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+    {% load material_form %}
+  <h4 id="heading">Search By {% block search_by %}base{% endblock search_by %}</h4>
+  <div class="container-fluid">
+    <form method="post" action="{% url 'search_results' %}">
+<div class="row">
+    <div class="input-field col s12 required" id="id_search_dish_container">
+        <input id="id_search_dish" maxlength="300" name="search_dish" type="text">
+        <label for="id_search_dish" class="">Restaurant Name (leave empty to list all restaurants for selected items)</label>
+    </div>
+</div>
+    <br>
+        {% csrf_token %}
+      <div class="row">
+          {% for item in items %}
+            <div class="col-md-2"><label>
+              <input class="with-gap" name="ids" value="{{ item.id }}" type="checkbox"/>
+              <span>{{ item.name }}</span>
+            </label>
+            </div>
+          {% endfor %}
+      </div>
+    <br>
+    <input type="hidden" name="by" value="{% block value %}{% endblock value%}">
+      <div class="center-align">
+        <button type="submit" class="btn">Search</button>
+      </div>
+
+    </form>
+  </div>
+
+{% endblock content %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Search Results{% endblock title %}
+{% block content %}
+{% load material_form %}
+
+<h4 id="heading">Search Results</h4>
+{% if not restaurants %}
+  <h5 id="heading">No restaurants found</h5>
+{% endif %}
+<ul class="collection">
+    {% for restaurant in restaurants %}
+
+      <li class="collection-item avatar">
+
+        <div class="row">
+          <div class="col-md-3 align-center valign-wrapper">
+            <img src="{{ restaurant.thumbnail_url }}" alt="" class="rounded">
+          </div>
+
+          <div class="col-md-9">
+            <span class="title"><h5>{{ restaurant.name.upper }}</h5></span>
+            <p><b>URL</b>: <a href="{{ restaurant.url }}">{{ restaurant.url }}</a></p>
+            <p><b>Cuisines</b>: {{ restaurant.cuisines }}</p>
+            <p><b>Has online delivery</b>: {% if restaurant.has_online_delivery %}Yes{% else %}No{% endif %}</p>
+            <p><b>Phone Numbers</b>: {{ restaurant.phone_numbers }}</p>
+            <p><b>Average Cost for two</b>: ₹{{ restaurant.average_cost_for_two }}</p>
+            <p><b>Location</b>: {{ restaurant.location }}</p>
+            <br>
+            <a href="{% url 'restaurant_details' restaurant.id %}">
+              <button class="btn">View Details</button>
+            </a>
+
+          </div>
+        </div>
+      </li>
+
+
+    {% endfor %}
+</ul>
+<form method="post">
+  <div class="container">
+    <div class="row">
+
+      <div class="col-md-6">
+          {% if previous %}
+            <div class="center-align">
+              <button type="submit" class="btn" name="previous">Previous Page</button>
+            </div>
+          {% endif %}
+      </div>
+
+
+      <div class="col-md-6">
+          {% if next %}
+            <div class="center-align">
+              <button type="submit" class="btn" name="next">Next Page</button>
+            </div>
+          {% endif %}
+      </div>
+
+    </div>
+
+  </div>
+<input type="hidden" name="next_page" value="{{ next_value }}">
+<input type="hidden" name="previous_page" value="{{ previous_value }}">
+<input type="hidden" name="by" value="{{ search_by }}">
+<input type="hidden" name="ids" value="{{ ids }}">
+{% csrf_token %}
+</form>
+<br><br>
+{% endblock content %}

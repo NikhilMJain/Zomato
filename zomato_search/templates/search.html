@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+    {% load material_form %}
+  <h4 id="heading">Search Restaurants</h4>
+  <form method="POST">
+      {% csrf_token %}
+    <p>
+      <label>
+        <input class="with-gap" name="group3" type="radio" checked/>
+        <span>Red</span>
+      </label>
+    </p>
+      {% form form=search_form %}
+      {% endform %}
+    <div class="center-align">
+      <button type="submit" class="btn">Search</button>
+    </div>
+  </form>
+
+{% endblock content %}

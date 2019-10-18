@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+    {% load material_form %}
+  <title>{{ restaurant.name }}</title>
+  <h4 id="heading">Restaurant Details</h4>
+
+
+  <section>
+  <div class="container-fluid">
+    <div class="card">
+      <div class="row ">
+        <div class="col-md-4 align-center valign-wrapper">
+          <img src="{{ restaurant.thumbnail_url }}" class="w-100">
+        </div>
+        <div class="col">
+          <div class="card-block ">
+            <h4 class="card-title"><b>{{ restaurant.name.upper }}</b></h4>
+            <p class="card-text"><b>URL</b>: <a href="{{ restaurant.url }}">{{ restaurant.url }}</a></p>
+            <p class="card-text"><b>Cuisines</b>: {{ restaurant.cuisines }}</p>
+            <p class="card-text"><b>Rating</b>: {{ restaurant.rating }}</p>
+            <p class="card-text"><b>Has online delivery</b>: {% if restaurant.has_online_delivery %}Yes{% else %}
+              No{% endif %}</p>
+            <p class="card-text"><b>Phone Numbers</b>: {{ restaurant.phone_numbers }}</p>
+            <p class="card-text"><b>Average Cost for two</b>: ₹{{ restaurant.average_cost_for_two }}</p>
+            <p class="card-text"><b>Address</b>: {{ restaurant.address }}</p>
+            <p class="card-text"><a href="{{ restaurant.menu_url }}"><b>Menu</b></a> &nbsp &nbsp<a href="{{ restaurant.photos_url }}"><b>Photos</b></a></p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <br>
+    {% if reviews %}
+      <h5 id="heading">User Reviews</h5>
+    {% endif %}
+  <ul class="collection">
+      {% for review in reviews %}
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-content">
+              <span class="card-title">{{ review.text }}</span>
+              <p>{{ review.user.username }}</p>
+            </div>
+            <div class="card-action">
+              <span class="badge deep-orange white-text">Rating: {{ review.rating }}</span>
+
+            </div>
+          </div>
+        </div>
+
+      {% endfor %}
+  </ul>
+  <br><br>
+
+  <h5 id="heading">Write Review</h5>
+  <form method="post">
+      {% csrf_token %}
+      {% form form=review_form %}
+      {% endform %}
+    <div class="center-align">
+      <button type="submit" class="btn">Add Your Review</button>
+    </div>
+  </form>
+  <br/>
+  <br/><br/>
+{% endblock content %}

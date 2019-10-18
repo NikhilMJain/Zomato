@@ -1,0 +1,24 @@
+/* These styles are generated from project.scss. */
+
+.alert-debug {
+  color: black;
+  background-color: white;
+  border-color: #d6e9c6;
+}
+
+.alert-error {
+  color: #b94a48;
+  background-color: #f2dede;
+  border-color: #eed3d7;
+}
+
+#heading {
+  text-align: center;
+}
+
+img.search_results {
+  vertical-align: middle;
+  height: 100%;
+  width: 100%;
+}
+
