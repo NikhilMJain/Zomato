@@ -1,9 +1,15 @@
+from abc import abstractmethod
+from typing import Dict, List
+
+from boto.connection import HTTPRequest
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.handlers.wsgi import WSGIRequest
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django.views import View
 
+from zomato_search.users.models import User
 from zomato_search.zomato_core.classes.entities import Restaurant, Cuisine, Category, Type
 from zomato_search.zomato_core.classes.zomato_handler import ZomatoHandler, NoSearchCriteriaException, \
     NoMoreResultsException
@@ -12,19 +18,34 @@ from zomato_search.zomato_core.models import Review
 
 
 class Home(LoginRequiredMixin, View):
-    def get(self, request):
+    def get(self, request: WSGIRequest):
         return render(request, 'home.html', {})
 
 
-class SearchCuisine(LoginRequiredMixin, View):
-    def get(self, request):
-        cuisines = self._get_cuisines()
-        context = {'items': cuisines}
-        return render(request, 'search_cuisine.html', context)
+class SearchBase(LoginRequiredMixin, View):
+    def __init__(self):
+        super().__init__()
+        self.api = ZomatoHandler()
 
-    def _get_cuisines(self):
+    def get(self, request: WSGIRequest):
+        items = self.get_items()
+        context = {'items': items}
+        template = self.get_template()
+        return render(request, template, context)
+
+    @abstractmethod
+    def get_items(self) -> Dict:
+        pass
+
+    @abstractmethod
+    def get_template(self) -> str:
+        pass
+
+
+class SearchCuisine(SearchBase):
+    def get_items(self):
         cuisines = list()
-        data = ZomatoHandler().get_cuisines()
+        data = self.api.get_cuisines()
         for item in data['cuisines']:
             cuisine = Cuisine()
             item_dict = item['cuisine']
@@ -33,16 +54,14 @@ class SearchCuisine(LoginRequiredMixin, View):
             cuisines.append(cuisine)
         return cuisines
 
+    def get_template(self):
+        return 'search_cuisine.html'
 
-class SearchCategory(LoginRequiredMixin, View):
-    def get(self, request):
-        categories = self._get_categories()
-        context = {'items': categories}
-        return render(request, 'search_category.html', context)
 
-    def _get_categories(self):
+class SearchCategory(SearchBase):
+    def get_items(self):
         categories = list()
-        data = ZomatoHandler().get_categories()
+        data = self.api.get_categories()
         for item in data['categories']:
             category = Category()
             item_dict = item['categories']
@@ -51,16 +70,14 @@ class SearchCategory(LoginRequiredMixin, View):
             categories.append(category)
         return categories
 
+    def get_template(self):
+        return 'search_category.html'
 
-class SearchType(LoginRequiredMixin, View):
-    def get(self, request):
-        types = self._get_types()
-        context = {'items': types}
-        return render(request, 'search_type.html', context)
 
-    def _get_types(self):
+class SearchType(SearchBase):
+    def get_items(self):
         types = list()
-        data = ZomatoHandler().get_types()
+        data = self.api.get_types()
         for item in data['establishments']:
             type = Type()
             item_dict = item['establishment']
@@ -68,6 +85,9 @@ class SearchType(LoginRequiredMixin, View):
             type.name = item_dict['name']
             types.append(type)
         return types
+
+    def get_template(self):
+        return 'search_type.html'
 
 
 class SearchResults(LoginRequiredMixin, View):
@@ -109,7 +129,7 @@ class SearchResults(LoginRequiredMixin, View):
         context = {
             'restaurants': self._get_restaurants(data),
             'next': self._get_next(data),
-            'previous': self._previous(data),
+            'previous': self._get_previous(data),
             'next_value': next_value,
             'previous_value': previous_value,
             'search_by': by,
@@ -139,29 +159,29 @@ class SearchResults(LoginRequiredMixin, View):
             raise NoMoreResultsException('No Results')
         return data['results_shown'] == 20
 
-    def _previous(self, data):
+    def _get_previous(self, data):
         return data['results_start'] != 0
 
 
 class RestaurantDetails(LoginRequiredMixin, View):
-    def get(self, request, id):
+    def get(self, request: WSGIRequest, id: int) -> HttpResponse:
         context = self._get_context(id)
         return render(request, 'restaurant_details.html', context)
 
-    def post(self, request, id):
+    def post(self, request: WSGIRequest, id: int) -> HttpResponse:
         form = ReviewForm(data=request.POST)
         if form.is_valid():
             self._save_review(id, form.cleaned_data, request.user)
             context = self._get_context(id)
             return render(request, 'restaurant_details.html', context)
 
-    def _get_reviews(self, id):
-        return list(Review.objects.filter(restaurant_id=id))
+    def _get_reviews(self, restaurant_id: int) -> List[Review]:
+        return list(Review.objects.filter(restaurant_id=restaurant_id))
 
-    def _get_restaurant_details(self, id):
-        details = ZomatoHandler().get_restaurant_details(id)
+    def _get_restaurant_details(self, restaurant_id: int) -> Restaurant:
+        details = ZomatoHandler().get_restaurant_details(restaurant_id)
         restaurant = Restaurant()
-        restaurant.id = id
+        restaurant.id = restaurant_id
         restaurant.name = details['name']
         restaurant.url = details['url'].split('?')[0]
         restaurant.has_online_delivery = details['has_online_delivery']
@@ -176,17 +196,17 @@ class RestaurantDetails(LoginRequiredMixin, View):
 
         return restaurant
 
-    def _save_review(self, id, data, user):
+    def _save_review(self, id: int, data: Dict, user: User) -> None:
         defaults = {'rating': data['rating'],
-                  'text': data['text']}
+                    'text': data['text']}
         kwargs = {'restaurant_id': id, 'user': user}
 
         Review.objects.update_or_create(defaults=defaults, **kwargs)
 
-    def _get_context(self, id):
-        reviews = self._get_reviews(id)
+    def _get_context(self, restaurant_id: int) -> Dict:
+        reviews = self._get_reviews(restaurant_id)
         context = {
-            'restaurant': self._get_restaurant_details(id),
+            'restaurant': self._get_restaurant_details(restaurant_id),
             'reviews': reviews,
             'review_form': ReviewForm()
         }
