@@ -1,3 +1,4 @@
+from django.conf import settings
 from zomathon import ZomatoAPI
 
 
@@ -11,7 +12,7 @@ class NoMoreResultsException(Exception):
 
 class ZomatoHandler:
     CITY_ID = 4
-    KEY = 'dd3fff93902a02d74d92adec2c748f46'
+    KEY = settings.ZOMATO_KEY
 
     def __init__(self):
         self.api = ZomatoAPI(key=self.KEY)
